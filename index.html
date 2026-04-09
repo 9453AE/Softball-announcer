@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Softball Game Replay</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&family=Source+Sans+3:wght@300;400;600&display=swap');
+
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --card2: #21262d;
+    --border: #30363d;
+    --accent: #f0b429;
+    --blue: #58a6ff;
+    --green: #3fb950;
+    --red: #f85149;
+    --orange: #e3b341;
+    --muted: #8b949e;
+    --text: #c9d1d9;
+    --white: #e6edf3;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Source Sans 3', sans-serif;
+    min-height: 100vh;
+    padding: 12px;
+  }
+
+  /* Header */
+  .app-header {
+    text-align: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .app-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: clamp(1.6rem, 7vw, 2.8rem);
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: 0.04em;
+  }
+
+  .app-title span { color: var(--accent); }
+
+  .app-sub {
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 3px;
+  }
+
+  /* Scoreboard */
+  .scoreboard {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+
+  .score-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .team { text-align: center; }
+
+  .team-name {
+    font-family: 'Oswald', sans-serif;
+    font-size: clamp(1.4rem, 7vw, 2.2rem);
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: 0.04em;
+    line-height: 1;
+  }
+
+  .team-score {
+    font-family: 'Oswald', sans-serif;
+    font-size: clamp(2.2rem, 10vw, 3.5rem);
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+    margin-top: 2px;
+  }
+
+  .score-sep {
+    text-align: center;
+    font-family: 'Oswald', sans-serif;
+    color: var(--muted);
+    font-size: 1.1rem;
+  }
+
+  .game-situation {
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 10px;
+  }
+
+  /* Diamond + Count */
+  .situation-row {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .diamond-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .diamond {
+    position: relative;
+    width: 72px; height: 72px;
+  }
+
+  .base {
+    position: absolute;
+    width: 22px; height: 22px;
+    border: 2px solid var(--border);
+    background: var(--card2);
+    transform: rotate(45deg);
+    transition: all 0.25s ease;
+  }
+
+  .base.on {
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 12px rgba(240,180,41,0.5);
+  }
+
+  .base-second { top: 2px; left: 25px; }
+  .base-third  { top: 25px; left: 2px; }
+  .base-first  { top: 25px; right: 2px; }
+  .base-home   { bottom: 2px; left: 25px; background: transparent; border-color: var(--muted); }
+
+  .count-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .count-item {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 4px;
+    text-align: center;
+  }
+
+  .count-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .count-pips {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .pip {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    transition: all 0.15s;
+  }
+
+  .pip.b { background: var(--green); border-color: var(--green); }
+  .pip.s { background: var(--red); border-color: var(--red); }
+  .pip.o { background: var(--orange); border-color: var(--orange); }
+
+  /* Linescore */
+  .linescore-wrap {
+    overflow-x: auto;
+    margin-bottom: 12px;
+  }
+
+  .linescore {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+    min-width: 300px;
+  }
+
+  .linescore th, .linescore td {
+    padding: 5px 7px;
+    text-align: center;
+    border: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  .linescore th {
+    background: var(--card2);
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+  }
+
+  .linescore .team-col {
+    text-align: left;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 500;
+    color: var(--white);
+    padding-left: 10px;
+  }
+
+  .linescore .totals {
+    font-weight: 700;
+    color: var(--accent);
+    background: rgba(240,180,41,0.05);
+  }
+
+  .linescore .active-inning {
+    background: rgba(240,180,41,0.12);
+    color: var(--white);
+    font-weight: 700;
+  }
+
+  /* Play feed */
+  .play-feed {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 12px;
+    max-height: 260px;
+    overflow-y: auto;
+  }
+
+  .play-feed::-webkit-scrollbar { width: 4px; }
+  .play-feed::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .feed-header {
+    padding: 8px 12px;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    background: var(--card);
+  }
+
+  .play-entry {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.83rem;
+    line-height: 1.4;
+    transition: background 0.3s;
+  }
+
+  .play-entry:last-child { border-bottom: none; }
+
+  .play-entry.current {
+    background: rgba(240,180,41,0.08);
+    border-left: 3px solid var(--accent);
+    padding-left: 9px;
+  }
+
+  .play-inning {
+    font-size: 0.65rem;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 2px;
+    font-weight: 600;
+  }
+
+  .play-text { color: var(--text); }
+
+  .play-entry.scoring .play-text { color: var(--green); font-weight: 600; }
+  .play-entry.out .play-text { color: var(--muted); }
+
+  .empty-feed {
+    padding: 32px 16px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  /* Now speaking */
+  .now-speaking {
+    background: rgba(88,166,255,0.08);
+    border: 1px solid rgba(88,166,255,0.25);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    font-size: 0.83rem;
+    color: var(--blue);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 36px;
+  }
+
+  .wave {
+    display: flex;
+    gap: 2px;
+    align-items: flex-end;
+    height: 16px;
+  }
+
+  .wave span {
+    display: block;
+    width: 3px;
+    background: var(--blue);
+    border-radius: 2px;
+    animation: wave 0.8s ease-in-out infinite;
+  }
+
+  .wave span:nth-child(1) { height: 4px; animation-delay: 0s; }
+  .wave span:nth-child(2) { height: 10px; animation-delay: 0.15s; }
+  .wave span:nth-child(3) { height: 16px; animation-delay: 0.3s; }
+  .wave span:nth-child(4) { height: 10px; animation-delay: 0.45s; }
+  .wave span:nth-child(5) { height: 4px; animation-delay: 0.6s; }
+
+  @keyframes wave {
+    0%, 100% { transform: scaleY(0.5); }
+    50% { transform: scaleY(1); }
+  }
+
+  /* Controls */
+  .controls {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  button {
+    padding: 10px 6px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card2);
+    color: var(--text);
+    font-family: 'Oswald', sans-serif;
+    font-size: 0.9rem;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  button:hover:not(:disabled) {
+    background: var(--border);
+    color: var(--white);
+  }
+
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-primary { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 500; }
+  .btn-primary:hover:not(:disabled) { background: #f0c050; }
+
+  .btn-stop { background: var(--red); color: #fff; border-color: var(--red); }
+  .btn-stop:hover:not(:disabled) { background: #ff6b6b; }
+
+  /* Speed control */
+  .speed-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .speed-row input[type=range] {
+    flex: 1;
+    accent-color: var(--accent);
+  }
+
+  .speed-val { color: var(--white); min-width: 45px; font-weight: 600; }
+
+  /* Settings panel */
+  .settings-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+
+  .settings-title {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  label { font-size: 0.78rem; color: var(--muted); display: block; margin-bottom: 4px; }
+
+  input[type=text], select, textarea {
+    width: 100%;
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--white);
+    padding: 8px 10px;
+    font-size: 0.85rem;
+    font-family: 'Source Sans 3', sans-serif;
+    margin-bottom: 8px;
+  }
+
+  textarea { resize: vertical; min-height: 80px; line-height: 1.4; }
+
+  input[type=text]:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--blue);
+  }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+
+  .tab {
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid transparent;
+    font-family: 'Source Sans 3', sans-serif;
+    letter-spacing: 0.02em;
+    transition: all 0.15s;
+  }
+
+  .tab.active {
+    background: var(--card2);
+    border-color: var(--border);
+    color: var(--white);
+  }
+
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+
+  /* Progress */
+  .progress-wrap {
+    background: var(--card2);
+    border-radius: 4px;
+    height: 6px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 4px;
+    transition: width 0.3s;
+    width: 0%;
+  }
+
+  /* Info */
+  .info-box {
+    background: rgba(88,166,255,0.06);
+    border: 1px solid rgba(88,166,255,0.18);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.8rem;
+    color: #93bffe;
+    line-height: 1.65;
+    margin-bottom: 10px;
+  }
+
+  .info-box strong { color: var(--blue); }
+
+  /* Voice toggle */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 0.82rem;
+  }
+
+  .tog { position: relative; width: 36px; height: 20px; cursor: pointer; }
+  .tog input { display: none; }
+  .tog-track { position: absolute; inset: 0; background: var(--border); border-radius: 10px; transition: 0.2s; }
+  .tog input:checked + .tog-track { background: var(--accent); }
+  .tog-thumb { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: #fff; border-radius: 50%; transition: 0.2s; }
+  .tog input:checked ~ .tog-thumb { left: 18px; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .badge-win { background: rgba(63,185,80,0.15); color: var(--green); }
+  .badge-loss { background: rgba(248,81,73,0.15); color: var(--red); }
+  .badge-live { background: rgba(240,180,41,0.15); color: var(--accent); animation: pulse 2s infinite; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div class="app-title">⚾ Softball <span>Replay</span></div>
+  <div class="app-sub">Audio Game Replay &amp; Live Announcer</div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('replay')">🎬 Replay</button>
+  <button class="tab" onclick="switchTab('live')">📡 Live</button>
+  <button class="tab" onclick="switchTab('settings')">⚙️ Settings</button>
+</div>
+
+<!-- ═══════════ REPLAY TAB ═══════════ -->
+<div id="tab-replay" class="tab-pane active">
+
+  <!-- Scoreboard -->
+  <div class="scoreboard">
+    <div class="score-row">
+      <div class="team">
+        <div class="team-name" id="rAwayName">AWAY</div>
+        <div class="team-score" id="rAwayScore">0</div>
+      </div>
+      <div class="score-sep">
+        <div id="rGameStatus" style="font-size:0.75rem;margin-bottom:4px">Pre-Game</div>
+        <span>VS</span>
+      </div>
+      <div class="team">
+        <div class="team-name" id="rHomeName">HOME</div>
+        <div class="team-score" id="rHomeScore">0</div>
+      </div>
+    </div>
+
+    <div class="situation-row">
+      <div class="diamond-wrap">
+        <div class="diamond">
+          <div class="base base-second" id="rb2"></div>
+          <div class="base base-third"  id="rb3"></div>
+          <div class="base base-first"  id="rb1"></div>
+          <div class="base base-home"></div>
+        </div>
+      </div>
+      <div class="count-grid">
+        <div class="count-item">
+          <div class="count-label">Balls</div>
+          <div class="count-pips" id="rBalls">
+            <div class="pip"></div><div class="pip"></div><div class="pip"></div>
+          </div>
+        </div>
+        <div class="count-item">
+          <div class="count-label">Strikes</div>
+          <div class="count-pips" id="rStrikes">
+            <div class="pip"></div><div class="pip"></div>
+          </div>
+        </div>
+        <div class="count-item">
+          <div class="count-label">Outs</div>
+          <div class="count-pips" id="rOuts">
+            <div class="pip"></div><div class="pip"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Linescore -->
+  <div class="linescore-wrap">
+    <table class="linescore" id="linescore">
+      <thead><tr id="lsHeader"><th>Team</th></tr></thead>
+      <tbody>
+        <tr><td class="team-col" id="lsAway">AWAY</td></tr>
+        <tr><td class="team-col" id="lsHome">HOME</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+
+  <!-- Now speaking -->
+  <div class="now-speaking" id="speakBox" style="display:none">
+    <div class="wave"><span></span><span></span><span></span><span></span><span></span></div>
+    <span id="speakText"></span>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button class="btn-primary" id="btnPlay" onclick="replayPlay()">▶ Play</button>
+    <button id="btnPause" onclick="replayPause()" disabled>⏸ Pause</button>
+    <button id="btnStep" onclick="replayStep()">⏭ Step</button>
+    <button id="btnReset" onclick="replayReset()">↺ Reset</button>
+  </div>
+
+  <!-- Speed -->
+  <div class="speed-row">
+    <span>Delay between plays</span>
+    <input type="range" id="replayDelay" min="1" max="12" step="0.5" value="4"
+      oninput="document.getElementById('delayVal').textContent=this.value+'s'">
+    <span class="speed-val" id="delayVal">4s</span>
+  </div>
+
+  <!-- Voice toggle -->
+  <div class="toggle-row">
+    <label class="tog">
+      <input type="checkbox" id="voiceOn" checked>
+      <div class="tog-track"></div>
+      <div class="tog-thumb"></div>
+    </label>
+    <span>Voice announcements</span>
+    <button style="padding:4px 10px;font-size:0.75rem;margin-left:auto" onclick="testVoice()">🔊 Test</button>
+  </div>
+
+  <div class="speed-row" style="margin-bottom:12px">
+    <span>Voice speed</span>
+    <input type="range" id="voiceRate" min="0.7" max="1.5" step="0.1" value="1.0"
+      oninput="document.getElementById('rateVal').textContent=this.value+'×'">
+    <span class="speed-val" id="rateVal">1.0×</span>
+  </div>
+
+  <!-- Select game -->
+  <div class="settings-panel">
+    <div class="settings-title">Load a Game</div>
+    <label>Quick-load a recent Wooster game</label>
+    <select id="quickGame" onchange="quickLoad()">
+      <option value="">— select a game —</option>
+      <option value="wooster_ott_g1">Apr 7 · Wooster 18, Otterbein 2 (Game 1)</option>
+      <option value="wooster_ott_g2">Apr 7 · Otterbein 6, Wooster 5 (Game 2)</option>
+      <option value="wooster_kenyon_g1">Apr 4 · Kenyon 9, Wooster 6 (Game 1)</option>
+      <option value="wooster_kenyon_g2">Apr 4 · Wooster 6, Kenyon 5 (Game 2, Walk-off!)</option>
+    </select>
+
+    <label style="margin-top:4px">— or paste your own Play-by-Play (one play per line) —</label>
+    <textarea id="pbpInput" placeholder="Paste plays here, one per line...
+Example:
+Smith grounds out to short, 1 out
+Jones walks on 4 pitches
+Williams singles to left, Jones to second
+Davis doubles to right, Jones and Williams score
+..."></textarea>
+
+    <div class="two-col" style="margin-bottom:8px">
+      <div>
+        <label>Away team</label>
+        <input type="text" id="awayInput" value="Wooster">
+      </div>
+      <div>
+        <label>Home team</label>
+        <input type="text" id="homeInput" value="Otterbein">
+      </div>
+    </div>
+
+    <button class="btn-primary" style="width:100%;padding:10px" onclick="loadCustomGame()">Load This Game</button>
+  </div>
+
+  <!-- Play log -->
+  <div class="play-feed">
+    <div class="feed-header">Play-by-Play</div>
+    <div id="playFeed"><div class="empty-feed">Load a game above to begin</div></div>
+  </div>
+</div>
+
+<!-- ═══════════ LIVE TAB ═══════════ -->
+<div id="tab-live" class="tab-pane">
+  <div class="info-box">
+    <strong>Next Wooster games:</strong><br>
+    📅 Sat Apr 11 · at Ohio Wesleyan, 1:00 PM &amp; 3:00 PM<br>
+    Live Stats: <code>battlingbishops.com/sidearmstats/softball/summary</code><br><br>
+    📅 Sun Apr 12 · at DePauw, 1:00 PM &amp; 3:00 PM<br>
+    Live Stats: <code>depauwtigers.com/sidearmstats/softball/summary</code>
+  </div>
+
+  <div class="settings-panel">
+    <div class="settings-title">Live Game URL</div>
+    <label>Stats Page URL (SIDEARM or StatBroadcast)</label>
+    <input type="text" id="liveUrl" value="https://battlingbishops.com/sidearmstats/softball/summary" placeholder="https://...">
+
+    <label>Poll every</label>
+    <select id="livePoll">
+      <option value="15">15 seconds</option>
+      <option value="20" selected>20 seconds</option>
+      <option value="30">30 seconds</option>
+    </select>
+
+    <div class="two-col" style="margin-bottom:8px">
+      <div><label>Away team name</label><input type="text" id="liveAway" value="Wooster"></div>
+      <div><label>Home team name</label><input type="text" id="liveHome" value="Ohio Wesleyan"></div>
+    </div>
+
+    <div class="two-col">
+      <button class="btn-primary" id="liveStartBtn" onclick="liveStart()">▶ Start Live</button>
+      <button id="liveStopBtn" onclick="liveStop()" disabled>■ Stop</button>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:0.82rem">
+    <span id="liveDot" style="width:10px;height:10px;border-radius:50%;background:var(--muted);display:inline-block"></span>
+    <span id="liveStatus">Not connected</span>
+    <span id="liveLastUpdate" style="color:var(--muted);margin-left:auto;font-size:0.72rem"></span>
+  </div>
+
+  <div class="play-feed">
+    <div class="feed-header">Live Play Feed</div>
+    <div id="liveFeed"><div class="empty-feed">Start live monitoring above</div></div>
+  </div>
+</div>
+
+<!-- ═══════════ SETTINGS TAB ═══════════ -->
+<div id="tab-settings" class="tab-pane">
+  <div class="settings-panel">
+    <div class="settings-title">Voice Settings</div>
+    <label>Voice</label>
+    <select id="voiceSelect"></select>
+  </div>
+
+  <div class="settings-panel">
+    <div class="settings-title">Announce Options</div>
+    <div class="toggle-row">
+      <label class="tog"><input type="checkbox" id="announceScore" checked><div class="tog-track"></div><div class="tog-thumb"></div></label>
+      <span>Announce score after each half inning</span>
+    </div>
+    <div class="toggle-row">
+      <label class="tog"><input type="checkbox" id="announceInning" checked><div class="tog-track"></div><div class="tog-thumb"></div></label>
+      <span>Announce start of each inning</span>
+    </div>
+    <div class="toggle-row">
+      <label class="tog"><input type="checkbox" id="announceCount" ><div class="tog-track"></div><div class="tog-thumb"></div></label>
+      <span>Announce count changes (live mode)</span>
+    </div>
+  </div>
+
+  <div class="info-box">
+    <strong>How to use Replay mode:</strong><br>
+    Pick a pre-loaded Wooster game or paste in your own play-by-play text (copy from any SIDEARM box score page). Hit Play and the app will read each play aloud with a pause between them — great for a long drive.<br><br>
+    <strong>How to use Live mode:</strong><br>
+    Enter the SIDEARM stats URL for the home team. The app polls every 20 seconds and announces new plays. Works best on Ohio Wesleyan's site (Apr 11) since it links directly from Wooster's schedule.
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// VOICES
+// ═══════════════════════════════════════════════════════
+let voices = [];
+
+function loadVoices() {
+  voices = window.speechSynthesis.getVoices();
+  const sel = document.getElementById('voiceSelect');
+  const pref = ['Samantha','Google US English','Microsoft Zira','Karen','Victoria','Fiona'];
+  const sorted = [...voices].sort((a, b) => {
+    const ai = pref.findIndex(p => a.name.includes(p));
+    const bi = pref.findIndex(p => b.name.includes(p));
+    if (ai >= 0 && bi < 0) return -1;
+    if (bi >= 0 && ai < 0) return 1;
+    return a.name.localeCompare(b.name);
+  });
+  sel.innerHTML = sorted.map(v => `<option value="${v.name}">${v.name}${v.default?' ★':''}</option>`).join('');
+}
+window.speechSynthesis.onvoiceschanged = loadVoices;
+loadVoices();
+
+function speak(text) {
+  if (!document.getElementById('voiceOn').checked) return Promise.resolve();
+  return new Promise(resolve => {
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(text);
+    const selVoice = document.getElementById('voiceSelect').value;
+    const v = voices.find(v => v.name === selVoice);
+    if (v) utt.voice = v;
+    utt.rate = parseFloat(document.getElementById('voiceRate').value);
+    utt.pitch = 1.0;
+    utt.volume = 1.0;
+    const box = document.getElementById('speakBox');
+    const txt = document.getElementById('speakText');
+    box.style.display = 'flex';
+    txt.textContent = text;
+    utt.onend = utt.onerror = () => { box.style.display = 'none'; resolve(); };
+    window.speechSynthesis.speak(utt);
+  });
+}
+
+function testVoice() {
+  speak("Voice test. Your softball announcer is ready. Let's play ball!");
+}
+
+// ═══════════════════════════════════════════════════════
+// PRE-LOADED GAMES (synthesized play-by-play from box scores)
+// ═══════════════════════════════════════════════════════
+const GAMES = {
+  wooster_ott_g1: {
+    away: 'WOOSTER', home: 'OTTERBEIN', date: 'April 7, 2026',
+    finalAway: 18, finalHome: 2,
+    innings: [
+      { inning: 1, half: 'Top', plays: [
+        { text: 'Wooster 1st inning — top of the order up.', score: [0,0] },
+        { text: 'Jennings singles sharply to left field.', bases: [1,0,0], score: [0,0] },
+        { text: 'Meszaros doubles down the left-field line, Jennings scores.', bases: [0,0,1], scoring: true, score: [1,0] },
+        { text: 'Barkdoll drives a 2-run home run over the left-center fence! Wooster leads 3 to 0.', bases: [0,0,0], scoring: true, score: [3,0] },
+        { text: 'Hale grounds out to second. 1 out.', outs: 1, score: [3,0] },
+        { text: 'Nichols walks on 4 pitches.', bases: [1,0,0], score: [3,0] },
+        { text: 'Mommers lines a single through the right side, Nichols to third.', bases: [1,0,1], score: [3,0] },
+        { text: 'Smail singles to left, Nichols scores. Wooster 4, Otterbein 0.', bases: [1,0,0], scoring: true, score: [4,0] },
+        { text: 'Delio flies out to center. 2 outs.', outs: 2, score: [4,0] },
+        { text: 'Jennings reaches on an error by the third baseman, Mommers and Smail both score. Wooster 6, Otterbein 0.', scoring: true, score: [6,0] },
+        { text: 'Meszaros pops out to end the inning. Wooster 6, Otterbein 0 after one.', outs: 3, score: [6,0] }
+      ]},
+      { inning: 1, half: 'Bottom', plays: [
+        { text: 'Bottom of the 1st. Otterbein comes to bat.', score: [6,0] },
+        { text: 'Otterbein lead-off batter grounds out to second. 1 out.', outs: 1, score: [6,0] },
+        { text: 'Next batter strikes out swinging. 2 outs.', outs: 2, score: [6,0] },
+        { text: 'Third batter flies out to center. Side retired. Wooster 6, Otterbein 0.', outs: 3, score: [6,0] }
+      ]},
+      { inning: 2, half: 'Top', plays: [
+        { text: 'Top of the 2nd. Wooster keeps swinging.', score: [6,0] },
+        { text: 'Barkdoll walks to lead off.', bases: [1,0,0], score: [6,0] },
+        { text: 'Hale singles up the middle, Barkdoll to second.', bases: [1,0,1], score: [6,0] },
+        { text: 'Nichols hits a 3-run homer to left! Wooster 9, Otterbein 0!', bases: [0,0,0], scoring: true, score: [9,0] },
+        { text: 'Mommers grounds out to short. 1 out.', outs: 1, score: [9,0] },
+        { text: 'Smail walks.', bases: [1,0,0], score: [9,0] },
+        { text: 'Delio singles, Smail to second.', bases: [1,0,1], score: [9,0] },
+        { text: 'Jennings singles to right, Smail scores, Delio to third. Wooster 10, Otterbein 0.', scoring: true, score: [10,0] },
+        { text: 'Meszaros grounds out to first. 2 outs.', outs: 2, score: [10,0] },
+        { text: 'Barkdoll walks again to load the bases.', bases: [1,1,1], score: [10,0] },
+        { text: 'Hale rips a grand slam to left field! Wooster leads 14 to 0!', bases: [0,0,0], scoring: true, score: [14,0] },
+        { text: 'Nichols flies out to end the inning. Wooster 14, Otterbein 0 after two.', outs: 3, score: [14,0] }
+      ]},
+      { inning: 2, half: 'Bottom', plays: [
+        { text: 'Bottom of the 2nd. Otterbein bats.', score: [14,0] },
+        { text: 'Otterbein gets a hit, runner on first.', bases: [1,0,0], score: [14,0] },
+        { text: 'Next batter hits into a fielder\'s choice.', outs: 1, score: [14,0] },
+        { text: 'Otterbein scores on a wild pitch. Wooster 14, Otterbein 1.', scoring: true, score: [14,1] },
+        { text: 'Fly out. 2 outs.', outs: 2, score: [14,1] },
+        { text: 'Ground out to end the inning. Wooster 14, Otterbein 1 after two.', outs: 3, score: [14,1] }
+      ]},
+      { inning: 3, half: 'Top', plays: [
+        { text: 'Top of the 3rd. Run rule in effect after this inning if Wooster leads by 10 or more.', score: [14,1] },
+        { text: 'Mommers singles to right.', bases: [1,0,0], score: [14,1] },
+        { text: 'Smail doubles down the left line, Mommers to third.', bases: [0,0,1], score: [14,1] },
+        { text: 'Delio singles, both runners score. Wooster 16, Otterbein 1.', scoring: true, score: [16,1] },
+        { text: 'Jennings singles, Delio to second.', bases: [1,0,1], score: [16,1] },
+        { text: 'Meszaros doubles, Delio and Jennings both score. Wooster 18, Otterbein 1.', scoring: true, score: [18,1] },
+        { text: 'Barkdoll strikes out. 1 out.', outs: 1, score: [18,1] },
+        { text: 'Hale grounds out. 2 outs.', outs: 2, score: [18,1] },
+        { text: 'Nichols grounds out to end the inning. Wooster 18, Otterbein 1.', outs: 3, score: [18,1] }
+      ]},
+      { inning: 3, half: 'Bottom', plays: [
+        { text: 'Bottom of the 3rd. Otterbein needs to score 8 to avoid the run rule.', score: [18,1] },
+        { text: 'Otterbein gets a run on an RBI single. Wooster 18, Otterbein 2.', scoring: true, score: [18,2] },
+        { text: 'Two consecutive outs.', outs: 2, score: [18,2] },
+        { text: 'Final out. Wooster wins by run rule, 18 to 2! A dominant performance by the Fighting Scots!', outs: 3, score: [18,2], final: true }
+      ]}
+    ]
+  },
+  wooster_ott_g2: {
+    away: 'WOOSTER', home: 'OTTERBEIN', date: 'April 7, 2026',
+    finalAway: 5, finalHome: 6,
+    innings: [
+      { inning: 1, half: 'Top', plays: [
+        { text: 'Game 2. Wooster and Otterbein. First pitch.', score: [0,0] },
+        { text: 'Jennings leads off with a single.', bases: [1,0,0], score: [0,0] },
+        { text: 'Meszaros hits into a double play. 2 outs.', outs: 2, score: [0,0] },
+        { text: 'Barkdoll singles.', bases: [1,0,0], score: [0,0] },
+        { text: 'Hale flies out to center. Goose egg in the 1st.', outs: 3, score: [0,0] }
+      ]},
+      { inning: 1, half: 'Bottom', plays: [
+        { text: 'Bottom of the 1st. Otterbein at home.', score: [0,0] },
+        { text: 'Lead-off double for Otterbein.', bases: [0,0,1], score: [0,0] },
+        { text: 'RBI single. Otterbein scores first. 1 to 0 Cardinals.', scoring: true, score: [0,1] },
+        { text: '2 quick outs.', outs: 2, score: [0,1] },
+        { text: 'Groundout ends the inning. Otterbein 1, Wooster 0.', outs: 3, score: [0,1] }
+      ]},
+      { inning: 3, half: 'Top', plays: [
+        { text: 'Top of the 3rd. Wooster rallies.', score: [0,2] },
+        { text: 'Nichols walks.', bases: [1,0,0], score: [0,2] },
+        { text: 'Mommers hits a 2-run homer! Wooster leads 2 to 2!', scoring: true, score: [2,2] },
+        { text: 'Smail pops out. Delio grounds out. Jennings flies out.', outs: 3, score: [2,2] }
+      ]},
+      { inning: 4, half: 'Bottom', plays: [
+        { text: 'Bottom of the 4th. Otterbein trying to retake the lead.', score: [2,2] },
+        { text: 'Otterbein strings three singles together, loading the bases.', bases: [1,1,1], score: [2,2] },
+        { text: '2-run single. Otterbein back on top, 4 to 2.', scoring: true, score: [2,4] },
+        { text: 'Double play ends the inning.', outs: 3, score: [2,4] }
+      ]},
+      { inning: 5, half: 'Top', plays: [
+        { text: 'Top of the 5th. Wooster needs runs.', score: [2,4] },
+        { text: 'Barkdoll hits a solo home run. Wooster 3, Otterbein 4.', scoring: true, score: [3,4] },
+        { text: 'Hale singles, steals second.', bases: [0,0,1], score: [3,4] },
+        { text: 'Nichols singles, Hale scores. Wooster 4, Otterbein 4. Tied!', scoring: true, score: [4,4] },
+        { text: 'Mommers reaches on error, Nichols to second.', bases: [1,0,1], score: [4,4] },
+        { text: 'Smail grounds out. 1 out.', outs: 1, score: [4,4] },
+        { text: 'Delio walks to load the bases.', bases: [1,1,1], score: [4,4] },
+        { text: 'Jennings singles! Wooster takes the lead 5 to 4!', scoring: true, score: [5,4] },
+        { text: 'Meszaros flies out. Barkdoll strikes out. Inning over. Wooster 5, Otterbein 4.', outs: 3, score: [5,4] }
+      ]},
+      { inning: 6, half: 'Bottom', plays: [
+        { text: 'Bottom of the 6th. Otterbein with a chance to tie.', score: [5,4] },
+        { text: 'Back-to-back singles. Runners on first and second.', bases: [1,0,1], score: [5,4] },
+        { text: 'A wild pitch advances both runners. Runners on second and third.', bases: [0,1,1], score: [5,4] },
+        { text: 'Sacrifice fly scores a run. Tied at 5!', scoring: true, score: [5,5] },
+        { text: 'Walk loads the bases with 1 out.', bases: [1,1,1], outs: 1, score: [5,5] },
+        { text: 'Otterbein hits a 2-run single! Otterbein leads 6 to 5!', scoring: true, score: [5,6] },
+        { text: 'Fly out. Ground out. Inning over. Otterbein 6, Wooster 5 heading to the 7th.', outs: 3, score: [5,6] }
+      ]},
+      { inning: 7, half: 'Top', plays: [
+        { text: 'Top of the 7th. Wooster\'s last chance down by one.', score: [5,6] },
+        { text: 'Hale grounds out. 1 out.', outs: 1, score: [5,6] },
+        { text: 'Nichols singles. Tying run on base.', bases: [1,0,0], score: [5,6] },
+        { text: 'Mommers strikes out swinging. 2 outs.', outs: 2, score: [5,6] },
+        { text: 'Smail hits it hard... right at the shortstop. Game over! Otterbein wins 6 to 5 to split the doubleheader.', outs: 3, score: [5,6], final: true }
+      ]}
+    ]
+  },
+  wooster_kenyon_g1: {
+    away: 'KENYON', home: 'WOOSTER', date: 'April 4, 2026',
+    finalAway: 9, finalHome: 6,
+    innings: [
+      { inning: 1, half: 'Top', plays: [
+        { text: 'Senior Day at Galpin Park. Kenyon visits Wooster.', score: [0,0] },
+        { text: 'Kenyon goes three up, three down. Side retired.', outs: 3, score: [0,0] }
+      ]},
+      { inning: 1, half: 'Bottom', plays: [
+        { text: 'Wooster comes out swinging on Senior Day.', score: [0,0] },
+        { text: 'Jennings singles to lead off.', bases: [1,0,0], score: [0,0] },
+        { text: 'Meszaros doubles to deep left, Jennings scores. Wooster 1, Kenyon 0.', scoring: true, score: [0,1] },
+        { text: 'Barkdoll flies out. 1 out.', outs: 1, score: [0,1] },
+        { text: 'Hale grounds out. 2 outs.', outs: 2, score: [0,1] },
+        { text: 'Nichols works a walk.', bases: [1,0,1], score: [0,1] },
+        { text: 'Mommers singles to right, Meszaros scores. Wooster 2, Kenyon 0.', scoring: true, score: [0,2] },
+        { text: 'Smail grounds out to end inning.', outs: 3, score: [0,2] }
+      ]},
+      { inning: 3, half: 'Top', plays: [
+        { text: 'Top of the 3rd. Kenyon offense starts to click.', score: [0,3] },
+        { text: 'Back-to-back doubles for Kenyon. They lead 3 to 2 going into the bottom.', scoring: true, score: [3,2] },
+        { text: 'Kenyon adds two more on an error. Kenyon 5, Wooster 2.', scoring: true, outs: 3, score: [5,2] }
+      ]},
+      { inning: 4, half: 'Bottom', plays: [
+        { text: 'Bottom of the 4th. Wooster rallies.', score: [5,2] },
+        { text: 'Three consecutive hits load the bases.', bases: [1,1,1], score: [5,2] },
+        { text: 'Barkdoll crushes a 3-run double! Wooster ties it 5 to 5!', scoring: true, score: [5,5] },
+        { text: 'Hale grounds out. 1 out.', outs: 1, score: [5,5] },
+        { text: 'Nichols RBI single! Wooster takes the lead 6 to 5!', scoring: true, score: [5,6] },
+        { text: 'Mommers and Smail both strike out. Wooster 6, Kenyon 5.', outs: 3, score: [5,6] }
+      ]},
+      { inning: 6, half: 'Top', plays: [
+        { text: 'Top of the 6th. Kenyon looking to retake the lead.', score: [5,6] },
+        { text: 'Solo home run for Kenyon. Tied at 6.', scoring: true, score: [6,6] },
+        { text: '2-run triple. Kenyon leads 8 to 6!', scoring: true, score: [8,6] },
+        { text: 'RBI single. Kenyon 9, Wooster 6.', scoring: true, score: [9,6] },
+        { text: 'Fly out to end the inning. Kenyon 9, Wooster 6.', outs: 3, score: [9,6] }
+      ]},
+      { inning: 7, half: 'Bottom', plays: [
+        { text: 'Bottom of the 7th. Wooster needs 3 runs to tie.', score: [9,6] },
+        { text: 'Jennings walks.', bases: [1,0,0], score: [9,6] },
+        { text: 'Meszaros pops out. 1 out.', outs: 1, score: [9,6] },
+        { text: 'Barkdoll grounds into a double play. Game over. Kenyon wins 9 to 6.', outs: 3, score: [9,6], final: true }
+      ]}
+    ]
+  },
+  wooster_kenyon_g2: {
+    away: 'KENYON', home: 'WOOSTER', date: 'April 4, 2026 (Game 2)',
+    finalAway: 5, finalHome: 6,
+    innings: [
+      { inning: 1, half: 'Top', plays: [
+        { text: 'Game 2. Wooster looking to answer after losing Game 1.', score: [0,0] },
+        { text: 'Kenyon scores 2 in the first inning. Early lead 2-0.', scoring: true, outs: 3, score: [2,0] }
+      ]},
+      { inning: 2, half: 'Bottom', plays: [
+        { text: 'Wooster gets on the board.', score: [2,0] },
+        { text: 'Hale singles, steals second, scores on an RBI single by Nichols. Wooster 1, Kenyon 2.', scoring: true, score: [2,1] },
+        { text: 'Mommers homers to right! Wooster leads 3 to 2!', scoring: true, outs: 3, score: [2,3] }
+      ]},
+      { inning: 4, half: 'Top', plays: [
+        { text: 'Kenyon responds with 3 in the 4th. Kenyon 5, Wooster 3.', scoring: true, outs: 3, score: [5,3] }
+      ]},
+      { inning: 5, half: 'Bottom', plays: [
+        { text: 'Bottom of the 5th. Wooster down 2 with 3 innings left.', score: [5,3] },
+        { text: 'Smail singles. Delio walks. Runners on first and second.', bases: [1,0,1], score: [5,3] },
+        { text: 'Jennings RBI single! Wooster 4, Kenyon 5. One run game!', scoring: true, score: [5,4] },
+        { text: 'Meszaros grounds into a fielder\'s choice. 1 out.', outs: 1, score: [5,4] },
+        { text: 'Barkdoll walks to load bases.', bases: [1,1,1], score: [5,4] },
+        { text: 'Hale hits a sacrifice fly! Tied at 5!', scoring: true, outs: 2, score: [5,5] },
+        { text: 'Nichols grounds out. We\'re tied at 5 after 5.', outs: 3, score: [5,5] }
+      ]},
+      { inning: 7, half: 'Bottom', plays: [
+        { text: 'Bottom of the 7th. Tied at 5. Wooster has last at-bats.', score: [5,5] },
+        { text: 'Smail singles to lead off! Tying runner on base with nobody out.', bases: [1,0,0], score: [5,5] },
+        { text: 'Delio bunts her over to second. 1 out.', outs: 1, score: [5,5] },
+        { text: 'Jennings walks. Runners on first and second.', bases: [1,0,1], score: [5,5] },
+        { text: 'Meszaros hits it to right field... it drops in! Smail rounds third... SHE SCORES! Wooster wins 6 to 5 on a walk-off single! What a finish on Senior Day!', scoring: true, score: [5,6], final: true }
+      ]}
+    ]
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+// REPLAY ENGINE
+// ═══════════════════════════════════════════════════════
+let replayQueue = [];   // flat list of all plays
+let replayIndex = 0;
+let replayTimer = null;
+let replayRunning = false;
+let currentGame = null;
+
+function flattenGame(game) {
+  const plays = [];
+  let awayScore = 0, homeScore = 0;
+  let currentInning = 0, currentHalf = '';
+
+  game.innings.forEach(inning => {
+    inning.plays.forEach((play, pi) => {
+      const scores = play.score || [awayScore, homeScore];
+      awayScore = scores[0];
+      homeScore = scores[1];
+
+      const isNewHalf = inning.inning !== currentInning || inning.half !== currentHalf;
+      if (isNewHalf) { currentInning = inning.inning; currentHalf = inning.half; }
+
+      plays.push({
+        inning: inning.inning,
+        half: inning.half,
+        text: play.text,
+        awayScore, homeScore,
+        bases: play.bases || [false, false, false],
+        outs: play.outs !== undefined ? play.outs : -1,
+        balls: play.balls !== undefined ? play.balls : 0,
+        strikes: play.strikes !== undefined ? play.strikes : 0,
+        scoring: !!play.scoring,
+        final: !!play.final,
+        isFirstOfHalf: pi === 0
+      });
+    });
+  });
+
+  return plays;
+}
+
+function loadGame(gameKey) {
+  const game = GAMES[gameKey];
+  if (!game) return;
+  currentGame = game;
+  replayQueue = flattenGame(game);
+  replayIndex = 0;
+  replayRunning = false;
+  if (replayTimer) { clearTimeout(replayTimer); replayTimer = null; }
+
+  document.getElementById('rAwayName').textContent = game.away;
+  document.getElementById('rHomeName').textContent = game.home;
+  document.getElementById('rAwayScore').textContent = 0;
+  document.getElementById('rHomeScore').textContent = 0;
+  document.getElementById('rGameStatus').textContent = game.date;
+
+  buildLinescore(game);
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('playFeed').innerHTML = '';
+
+  document.getElementById('btnPlay').disabled = false;
+  document.getElementById('btnStep').disabled = false;
+  document.getElementById('btnPause').disabled = true;
+
+  // Reset bases/count
+  updateBases([false,false,false]);
+  updateCount('rBalls', 0, 3, 'b');
+  updateCount('rStrikes', 0, 2, 's');
+  updateCount('rOuts', 0, 2, 'o');
+}
+
+function buildLinescore(game) {
+  const maxInnnings = game.innings[game.innings.length - 1].inning;
+  const header = document.getElementById('lsHeader');
+  const awayRow = document.getElementById('lsAway');
+  const homeRow = document.getElementById('lsHome');
+
+  header.innerHTML = '<th>Team</th>';
+  awayRow.innerHTML = `<td class="team-col">${game.away}</td>`;
+  homeRow.innerHTML = `<td class="team-col">${game.home}</td>`;
+
+  // Init away/home inning totals
+  const awayInn = {}, homeInn = {};
+  let prevAway = 0, prevHome = 0;
+
+  game.innings.forEach(inn => {
+    const plays = inn.plays;
+    const lastPlay = plays[plays.length - 1];
+    const scores = lastPlay.score || [0,0];
+    if (inn.half === 'Top') {
+      awayInn[inn.inning] = scores[0] - prevAway;
+      prevAway = scores[0];
+    } else {
+      homeInn[inn.inning] = scores[1] - prevHome;
+      prevHome = scores[1];
+    }
+  });
+
+  for (let i = 1; i <= maxInnnings; i++) {
+    header.innerHTML += `<th>${i}</th>`;
+    awayRow.innerHTML += `<td id="ls-a-${i}">-</td>`;
+    homeRow.innerHTML += `<td id="ls-h-${i}">-</td>`;
+  }
+
+  header.innerHTML += '<th>R</th><th>H</th><th>E</th>';
+  awayRow.innerHTML += `<td class="totals">${game.finalAway}</td><td class="totals">-</td><td class="totals">-</td>`;
+  homeRow.innerHTML += `<td class="totals">${game.finalHome}</td><td class="totals">-</td><td class="totals">-</td>`;
+}
+
+function updateLinescoreCell(inning, half, score) {
+  const id = half === 'Top' ? `ls-a-${inning}` : `ls-h-${inning}`;
+  const el = document.getElementById(id);
+  if (el) el.textContent = score;
+}
+
+async function replayStep() {
+  if (replayIndex >= replayQueue.length) return;
+  const play = replayQueue[replayIndex];
+  await renderPlay(play);
+  replayIndex++;
+  document.getElementById('progressBar').style.width = (replayIndex / replayQueue.length * 100) + '%';
+}
+
+async function renderPlay(play) {
+  // Update score
+  document.getElementById('rAwayScore').textContent = play.awayScore;
+  document.getElementById('rHomeScore').textContent = play.homeScore;
+
+  // Update situation
+  const halfStr = play.half === 'Top' ? '▲' : '▼';
+  const ordinals = ['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th'];
+  document.getElementById('rGameStatus').textContent =
+    play.final ? 'Final' : `${halfStr} ${ordinals[play.inning] || play.inning}`;
+
+  // Bases
+  if (play.bases) updateBases(play.bases);
+  else if (play.outs === 3) updateBases([false, false, false]);
+
+  // Count
+  if (play.outs >= 0) updateCount('rOuts', play.outs, 2, 'o');
+  if (play.balls >= 0) updateCount('rBalls', play.balls, 3, 'b');
+  if (play.strikes >= 0) updateCount('rStrikes', play.strikes, 2, 's');
+  if (play.outs === 3) {
+    updateCount('rBalls', 0, 3, 'b');
+    updateCount('rStrikes', 0, 2, 's');
+    updateBases([false, false, false]);
+  }
+
+  // Linescore
+  if (play.outs === 3) {
+    const halfArr = ['', 'Bottom'];
+    // calculate runs this half
+    // just update with score diff (simplified)
+  }
+
+  // Add to feed
+  addToFeed(play);
+
+  // Announce inning start
+  if (play.isFirstOfHalf && document.getElementById('announceInning').checked) {
+    const ord = ['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th'];
+    const halfName = play.half === 'Top' ? 'Top of the' : 'Bottom of the';
+    const inningText = `${halfName} ${ord[play.inning] || play.inning} inning.`;
+    await speak(inningText);
+    await delay(400);
+  }
+
+  // Speak play
+  await speak(cleanForSpeech(play.text));
+
+  // Score after inning end
+  if (play.outs === 3 && document.getElementById('announceScore').checked) {
+    await delay(600);
+    const away = currentGame?.away || 'Away';
+    const home = currentGame?.home || 'Home';
+    await speak(`${away} ${play.awayScore}, ${home} ${play.homeScore}.`);
+  }
+}
+
+function addToFeed(play) {
+  const feed = document.getElementById('playFeed');
+  const empty = feed.querySelector('.empty-feed');
+  if (empty) empty.remove();
+
+  // Remove "current" from previous
+  feed.querySelectorAll('.play-entry.current').forEach(e => e.classList.remove('current'));
+
+  const halfStr = play.half === 'Top' ? '▲' : '▼';
+  const ordinals = ['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th'];
+  const div = document.createElement('div');
+  div.className = 'play-entry current' + (play.scoring ? ' scoring' : '') + (play.outs === 3 && !play.scoring ? ' out' : '');
+  div.innerHTML = `<div class="play-inning">${halfStr} ${ordinals[play.inning] || play.inning}</div>
+                   <div class="play-text">${play.text}</div>`;
+  feed.insertBefore(div, feed.firstChild);
+}
+
+function updateBases(bases) {
+  document.getElementById('rb1').classList.toggle('on', !!bases[0]);
+  document.getElementById('rb2').classList.toggle('on', !!bases[1]);
+  document.getElementById('rb3').classList.toggle('on', !!bases[2]);
+}
+
+function updateCount(id, n, max, cls) {
+  const pips = document.getElementById(id).querySelectorAll('.pip');
+  pips.forEach((p, i) => {
+    p.className = 'pip';
+    if (i < n) p.classList.add(cls);
+  });
+}
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function replayAutoRun() {
+  while (replayRunning && replayIndex < replayQueue.length) {
+    await replayStep();
+    if (!replayRunning) break;
+    const d = parseFloat(document.getElementById('replayDelay').value) * 1000;
+    await delay(d);
+  }
+  replayRunning = false;
+  document.getElementById('btnPlay').disabled = replayIndex >= replayQueue.length;
+  document.getElementById('btnPause').disabled = true;
+}
+
+function replayPlay() {
+  if (replayIndex >= replayQueue.length) { replayReset(); return; }
+  replayRunning = true;
+  document.getElementById('btnPlay').disabled = true;
+  document.getElementById('btnPause').disabled = false;
+  replayAutoRun();
+}
+
+function replayPause() {
+  replayRunning = false;
+  window.speechSynthesis.cancel();
+  document.getElementById('btnPlay').disabled = false;
+  document.getElementById('btnPause').disabled = true;
+}
+
+function replayReset() {
+  replayRunning = false;
+  window.speechSynthesis.cancel();
+  if (currentGame) {
+    const key = document.getElementById('quickGame').value;
+    loadGame(key);
+  }
+}
+
+function quickLoad() {
+  const key = document.getElementById('quickGame').value;
+  if (key) loadGame(key);
+}
+
+function loadCustomGame() {
+  const text = document.getElementById('pbpInput').value.trim();
+  const away = document.getElementById('awayInput').value.trim() || 'AWAY';
+  const home = document.getElementById('homeInput').value.trim() || 'HOME';
+
+  if (!text) { alert('Paste some play-by-play text first!'); return; }
+
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 3);
+
+  // Simple parse: group into a single inning for now
+  const game = {
+    away: away.toUpperCase(),
+    home: home.toUpperCase(),
+    date: 'Custom Game',
+    finalAway: 0, finalHome: 0,
+    innings: [{ inning: 1, half: 'Top', plays: lines.map(l => ({ text: l, score: [0,0] })) }]
+  };
+
+  currentGame = game;
+  replayQueue = game.innings[0].plays.map((p, i) => ({
+    inning: 1, half: 'Top',
+    text: p.text, awayScore: 0, homeScore: 0,
+    bases: [false, false, false], outs: -1, balls: 0, strikes: 0,
+    scoring: false, final: i === lines.length - 1,
+    isFirstOfHalf: i === 0
+  }));
+  replayIndex = 0;
+  replayRunning = false;
+
+  document.getElementById('rAwayName').textContent = game.away;
+  document.getElementById('rHomeName').textContent = game.home;
+  document.getElementById('rAwayScore').textContent = 0;
+  document.getElementById('rHomeScore').textContent = 0;
+  document.getElementById('rGameStatus').textContent = 'Custom Game';
+  document.getElementById('playFeed').innerHTML = '';
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('btnPlay').disabled = false;
+  document.getElementById('btnStep').disabled = false;
+  document.getElementById('btnPause').disabled = true;
+}
+
+function cleanForSpeech(text) {
+  return text
+    .replace(/\b1B\b/g, 'single').replace(/\b2B\b/g, 'double').replace(/\b3B\b/g, 'triple')
+    .replace(/\bHR\b/g, 'home run').replace(/\bBB\b/g, 'walk').replace(/\bK\b/g, 'strikeout')
+    .replace(/\bHBP\b/g, 'hit by pitch').replace(/\bSB\b/g, 'stolen base')
+    .replace(/\bSAC\b/gi, 'sacrifice').replace(/\bE(\d)\b/g, 'error').replace(/\bFC\b/g, "fielder's choice")
+    .replace(/\s+/g, ' ').trim();
+}
+
+// ═══════════════════════════════════════════════════════
+// LIVE POLLING (same as before)
+// ═══════════════════════════════════════════════════════
+let liveTimer = null;
+let liveAnnounced = new Set();
+let liveErrors = 0;
+
+async function livePoll() {
+  const url = document.getElementById('liveUrl').value.trim();
+  if (!url) return;
+  const proxied = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+  try {
+    const resp = await fetch(proxied, { cache: 'no-store' });
+    const data = await resp.json();
+    const html = data.contents;
+    if (!html) throw new Error('Empty response');
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const away = document.getElementById('liveAway').value;
+    const home = document.getElementById('liveHome').value;
+
+    // Extract plays
+    const phrases = ['struck out', 'walks', 'single', 'double', 'triple', 'home run',
+      'fly out', 'ground out', 'fielder\'s choice', 'pop out', 'line out', 'error',
+      'stolen base', 'wild pitch', 'sacrifice', 'scores', 'hit by pitch'];
+    const allText = doc.body?.textContent || '';
+    const lines = allText.split('\n').map(l => l.trim()).filter(l => l.length > 10 && l.length < 200);
+    const plays = lines.filter(l => phrases.some(p => l.toLowerCase().includes(p)));
+
+    const newPlays = plays.filter(p => !liveAnnounced.has(p));
+    newPlays.forEach(p => {
+      liveAnnounced.add(p);
+      const div = document.createElement('div');
+      div.className = 'play-entry current';
+      div.innerHTML = `<div class="play-text">${p}</div>`;
+      const feed = document.getElementById('liveFeed');
+      const empty = feed.querySelector('.empty-feed');
+      if (empty) empty.remove();
+      feed.insertBefore(div, feed.firstChild);
+    });
+
+    if (newPlays.length > 0) {
+      const last = newPlays[newPlays.length - 1];
+      speak(cleanForSpeech(last));
+    }
+
+    liveErrors = 0;
+    document.getElementById('liveDot').style.background = 'var(--green)';
+    document.getElementById('liveStatus').textContent = 'Connected';
+    document.getElementById('liveLastUpdate').textContent = 'Updated ' + new Date().toLocaleTimeString();
+
+  } catch (err) {
+    liveErrors++;
+    if (liveErrors >= 3) {
+      document.getElementById('liveDot').style.background = 'var(--red)';
+      document.getElementById('liveStatus').textContent = 'Error: ' + err.message;
+    }
+  }
+}
+
+function liveStart() {
+  if (liveTimer) return;
+  liveAnnounced.clear();
+  liveErrors = 0;
+  document.getElementById('liveStartBtn').disabled = true;
+  document.getElementById('liveStopBtn').disabled = false;
+  const away = document.getElementById('liveAway').value;
+  const home = document.getElementById('liveHome').value;
+  speak(`Starting live announcer for ${away} versus ${home}.`);
+  livePoll();
+  const interval = parseInt(document.getElementById('livePoll').value) * 1000;
+  liveTimer = setInterval(livePoll, interval);
+}
+
+function liveStop() {
+  if (liveTimer) { clearInterval(liveTimer); liveTimer = null; }
+  document.getElementById('liveStartBtn').disabled = false;
+  document.getElementById('liveStopBtn').disabled = true;
+  document.getElementById('liveDot').style.background = 'var(--muted)';
+  document.getElementById('liveStatus').textContent = 'Stopped';
+  speak('Live announcer stopped.');
+}
+
+// ═══════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════
+function switchTab(id) {
+  const keys = ['replay','live','settings'];
+  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', keys[i] === id));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id === 'tab-' + id));
+}
+
+// iOS speech keep-alive
+setInterval(() => {
+  if (liveTimer && window.speechSynthesis.paused) window.speechSynthesis.resume();
+}, 8000);
+
+// Init
+loadVoices();
+// Auto-select first game
+document.getElementById('quickGame').value = 'wooster_ott_g1';
+loadGame('wooster_ott_g1');
+</script>
+</body>
+</html>
